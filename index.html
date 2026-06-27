@@ -72,8 +72,8 @@
   #hud .val{font-size:26px;font-weight:700;color:var(--accent2);line-height:1.1}
   #hud .hint{font-size:10px;color:var(--muted);margin-top:3px}
   #hudLoading{min-width:200px}
-  #hudLoading .load-title{font-size:17px;font-weight:700;color:var(--accent2);letter-spacing:.5px}
-  #hudLoading .load-sub{font-size:11px;color:var(--muted);margin-top:3px}
+  #hudLoading .load-title{font-size:22px;font-weight:700;color:var(--accent2);letter-spacing:.5px;line-height:1.15}
+  #hudLoading .load-sub{font-size:11px;color:var(--muted);margin-top:4px}
   .load-dots::after{content:"";animation:loadDots 1.2s steps(4,end) infinite}
   @keyframes loadDots{0%{content:""}25%{content:"."}50%{content:".."}75%{content:"..."}100%{content:""}}
 
@@ -92,8 +92,6 @@
   #zoompct{min-width:62px;text-align:center;font-size:14px;font-weight:600;cursor:pointer}
   #zoompct:hover{color:var(--accent2)}
 
-  #loading{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
-    color:var(--muted);font-size:14px;flex-direction:column;gap:8px;text-align:center}
 
   #langBar{display:grid;grid-template-columns:repeat(4,1fr);gap:10px 6px;margin-top:auto;margin-bottom:60px;padding-top:14px}
   .flag{position:relative;display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer;opacity:.5;transition:.15s}
