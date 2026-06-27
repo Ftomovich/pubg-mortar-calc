@@ -1,0 +1,462 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PUBG Mortar / Distance Calculator</title>
+<style>
+  :root{
+    --bg:#0e1116; --panel:#161b22; --panel2:#1c232d; --line:#2a323d;
+    --accent:#f0a020; --accent2:#ffce4d; --text:#e6edf3; --muted:#8b97a7;
+    --good:#3fb950;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;font-family:'Segoe UI',Roboto,system-ui,sans-serif}
+  html,body{height:100%;background:var(--bg);color:var(--text);overflow:hidden}
+  #app{display:flex;height:100vh;width:100vw}
+  svg.ic{width:16px;height:16px;flex:0 0 16px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+
+  /* ---------- SIDEBAR ---------- */
+  #sidebar{
+    width:260px;flex:0 0 260px;background:var(--panel);border-right:1px solid var(--line);
+    display:flex;flex-direction:column;padding:16px 12px;gap:6px;overflow-y:auto;overflow-x:hidden;
+  }
+  #sidebar h1{font-size:15px;letter-spacing:.5px;margin-bottom:2px;display:flex;align-items:center;gap:8px}
+  #sidebar h1 svg.ic{width:20px;height:20px;color:var(--accent)}
+  #sidebar .sub{font-size:11px;color:var(--muted);margin-bottom:14px}
+  .sec-label{font-size:11px;text-transform:uppercase;letter-spacing:1px;color:var(--muted);margin:10px 4px 6px}
+  .map-btn{
+    display:flex;justify-content:space-between;align-items:center;
+    background:var(--panel2);border:1px solid var(--line);border-radius:8px;
+    color:var(--text);padding:9px 12px;cursor:pointer;font-size:13px;transition:.15s;
+  }
+  .map-btn:hover{border-color:var(--accent);background:#222b36}
+  .map-btn.active{border-color:var(--accent);background:#2a2417;color:var(--accent2)}
+  .map-btn small{color:var(--muted);font-size:11px}
+  .map-btn.active small{color:var(--accent)}
+
+  .toggle-row{display:flex;align-items:center;justify-content:space-between;
+    background:var(--panel2);border:1px solid var(--line);border-radius:8px;padding:9px 12px;font-size:13px;margin-top:4px}
+  .switch{position:relative;width:40px;height:22px}
+  .switch input{display:none}
+  .slider{position:absolute;inset:0;background:#3a434f;border-radius:20px;cursor:pointer;transition:.2s}
+  .slider:before{content:"";position:absolute;width:16px;height:16px;left:3px;top:3px;background:#fff;border-radius:50%;transition:.2s}
+  .switch input:checked + .slider{background:var(--accent)}
+  .switch input:checked + .slider:before{transform:translateX(18px)}
+
+  .btn{
+    display:flex;align-items:center;justify-content:center;gap:8px;
+    background:var(--panel2);border:1px solid var(--line);border-radius:8px;color:var(--text);
+    padding:10px;cursor:pointer;font-size:13px;transition:.15s;
+  }
+  .btn:hover{border-color:var(--accent);color:var(--accent2)}
+  .report{font-size:10px;color:var(--muted);text-align:center;line-height:1.5;padding:0 4px}
+  .report a{color:#4ea3ff;cursor:pointer;text-decoration:none;font-weight:600}
+  .report a:hover{text-decoration:underline}
+  .support{text-align:center;padding-top:8px}
+  .support a{display:inline-flex;align-items:center;gap:5px;color:#ff5e9c;font-size:12px;font-weight:600;text-decoration:none;cursor:pointer}
+  .support a:hover{text-decoration:underline}
+  .support svg{width:14px;height:14px;flex:0 0 auto}
+  .credit{font-size:10px;color:var(--muted);text-align:center;padding-top:8px}
+
+  /* ---------- MAIN ---------- */
+  #main{flex:1;position:relative;overflow:hidden;background:#0a0d12}
+  canvas{display:block;width:100%;height:100%;cursor:crosshair}
+
+  #hud{
+    position:absolute;top:14px;left:50%;transform:translateX(-50%);
+    background:rgba(16,20,26,.85);backdrop-filter:blur(6px);
+    border:1px solid var(--line);border-radius:10px;padding:10px 22px;text-align:center;
+    box-shadow:0 4px 20px rgba(0,0,0,.4)
+  }
+  #hud .lbl{font-size:10px;letter-spacing:2px;color:var(--muted);text-transform:uppercase}
+  #hud .val{font-size:26px;font-weight:700;color:var(--accent2);line-height:1.1}
+  #hud .hint{font-size:10px;color:var(--muted);margin-top:3px}
+
+  #zoombar{
+    position:absolute;bottom:18px;left:50%;transform:translateX(-50%);
+    display:flex;align-items:center;gap:2px;
+    background:rgba(16,20,26,.9);backdrop-filter:blur(6px);
+    border:1px solid var(--line);border-radius:10px;padding:5px;
+    box-shadow:0 4px 20px rgba(0,0,0,.4)
+  }
+  #zoombar button{
+    width:38px;height:34px;background:transparent;border:none;color:var(--text);
+    cursor:pointer;border-radius:6px;transition:.15s;display:flex;align-items:center;justify-content:center
+  }
+  #zoombar button:hover{background:#2a323d;color:var(--accent2)}
+  #zoompct{min-width:62px;text-align:center;font-size:14px;font-weight:600;cursor:pointer}
+  #zoompct:hover{color:var(--accent2)}
+
+  #loading{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
+    color:var(--muted);font-size:14px;flex-direction:column;gap:8px;text-align:center}
+
+  #langBar{display:grid;grid-template-columns:repeat(4,1fr);gap:10px 6px;margin-top:auto;margin-bottom:60px;padding-top:14px}
+  .flag{position:relative;display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer;opacity:.5;transition:.15s}
+  .flag:hover{opacity:1}
+  .flag.active{opacity:1}
+  .flag svg{width:24px;height:24px;border-radius:4px;border:1px solid #2a323d;display:block}
+  .flag.active svg{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent)}
+  .flag span{font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px}
+  .flag.active span{color:var(--accent2)}
+
+  .flag::after{content:attr(data-name);position:absolute;bottom:calc(100% + 8px);left:50%;transform:translateX(-50%) translateY(4px);
+    background:#0a0d12;color:var(--text);border:1px solid var(--line);border-radius:6px;
+    padding:4px 8px;font-size:11px;white-space:nowrap;pointer-events:none;
+    opacity:0;transition:opacity .15s,transform .15s;transition-delay:0s;z-index:20;
+    box-shadow:0 4px 14px rgba(0,0,0,.5)}
+  .flag::before{content:"";position:absolute;bottom:calc(100% + 3px);left:50%;transform:translateX(-50%) translateY(4px);
+    border:5px solid transparent;border-top-color:var(--line);opacity:0;transition:opacity .15s,transform .15s;transition-delay:0s;pointer-events:none;z-index:20}
+  .flag:hover::after,.flag:hover::before{opacity:1;transform:translateX(-50%) translateY(0);transition-delay:.9s}
+</style>
+</head>
+<body>
+<div id="app">
+  <aside id="sidebar">
+    <h1>
+      <svg class="ic" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="4"/><line x1="12" y1="1" x2="12" y2="5"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="1" y1="12" x2="5" y2="12"/><line x1="19" y1="12" x2="23" y2="12"/></svg>
+      MORTAR CALC
+    </h1>
+    <div class="sub" id="t-sub">PUBG distance & grid tool</div>
+
+    <div class="sec-label" id="t-maps">Карты</div>
+    <div id="mapList"></div>
+
+    <div class="sec-label" id="t-settings">Настройки</div>
+    <label class="toggle-row"><span id="t-grid">Сетка 100 м</span>
+      <span class="switch"><input type="checkbox" id="gridToggle" checked><span class="slider"></span></span>
+    </label>
+    <button class="btn" id="clearBtn" style="margin-top:8px">
+      <svg class="ic" viewBox="0 0 24 24"><path d="M3 6h18"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>
+      <span id="t-clear">Очистить точки</span>
+    </button>
+    <button class="btn" id="resetBtn">
+      <svg class="ic" viewBox="0 0 24 24"><path d="M3 12a9 9 0 1 0 3-6.7"/><polyline points="3 3 3 9 9 9"/></svg>
+      <span id="t-reset">Сбросить вид</span>
+    </button>
+
+    <div id="langBar"></div>
+    <div class="report" id="t-report"></div>
+    <div class="support"><a id="t-support" href="https://ko-fi.com/ftomovych" target="_blank" rel="noopener"></a></div>
+    <div class="credit">Made by Ftomovych</div>
+  </aside>
+
+  <main id="main">
+    <canvas id="cv"></canvas>
+    <div id="hud">
+      <div class="lbl" id="t-distance">Дистанция</div>
+      <div class="val"><span id="distVal">0</span> <span id="t-unit">m</span></div>
+      <div class="hint" id="t-hint">ЛКМ — создать точку · ПКМ зажать — двигать карту · ПКМ-клик / Backspace — сбросить точки</div>
+    </div>
+    <div id="zoombar">
+      <button id="zoomOut" title="Уменьшить"><svg class="ic" viewBox="0 0 24 24" style="width:18px;height:18px"><line x1="5" y1="12" x2="19" y2="12"/></svg></button>
+      <div id="zoompct">100%</div>
+      <button id="zoomIn" title="Увеличить"><svg class="ic" viewBox="0 0 24 24" style="width:18px;height:18px"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></button>
+    </div>
+    <div id="loading"><span id="t-loading">Загрузка карты…</span></div>
+  </main>
+</div>
+
+<script>
+const MAPS = [
+  { id:"erangel",  name:"Erangel",  size:8000, img:"maps/erangel.png" },
+  { id:"miramar",  name:"Miramar",  size:8000, img:"maps/miramar.png" },
+  { id:"taego",    name:"Taego",    size:8000, img:"maps/taego.png" },
+  { id:"deston",   name:"Deston",   size:8000, img:"maps/deston.png" },
+  { id:"rondo",    name:"Rondo",    size:8000, img:"maps/rondo.png" },
+  { id:"vikendi",  name:"Vikendi",  size:6000, img:"maps/vikendi.png" },
+  { id:"sanhok",   name:"Sanhok",   size:4000, img:"maps/sanhok.png" },
+  { id:"paramo",   name:"Paramo",   size:3000, img:"maps/paramo.png" },
+  { id:"karakin",  name:"Karakin",  size:2000, img:"maps/karakin.png" },
+];
+const GRID_STEP = 100;
+
+const cv = document.getElementById('cv');
+const ctx = cv.getContext('2d');
+let view = { scale:1, ox:0, oy:0 };
+let img = new Image();
+let curMap = MAPS[0];
+let points = [];
+let hover = null;            // {mx,my} позиция курсора для превью-линии
+let drag = null;
+let imgLoaded = false;
+let baseScale = 1;
+let UNIT='m'; let LANG='en';
+
+function resize(){
+  const r = document.getElementById('main').getBoundingClientRect();
+  cv.width = r.width; cv.height = r.height;
+  draw();
+}
+window.addEventListener('resize', resize);
+
+function loadMap(m){
+  curMap = m; points = []; hover=null; imgLoaded = false;
+  document.getElementById('loading').style.display='flex';
+  document.querySelectorAll('.map-btn').forEach(b=>b.classList.toggle('active', b.dataset.id===m.id));
+  img = new Image();
+  img.onload = ()=>{ imgLoaded = true; document.getElementById('loading').style.display='none'; fitView(); };
+  img.onerror = ()=>{ document.getElementById('loading').innerHTML =
+      'Картинка не найдена:<br><code>'+m.img+'</code><br><small>положи HD-картинку в папку maps/</small>'; };
+  img.src = m.img;
+  updateDist();
+}
+function fitView(){
+  const pad = 40;
+  const sx = (cv.width-pad)/img.width, sy=(cv.height-pad)/img.height;
+  baseScale = Math.min(sx,sy);
+  view.scale = baseScale;
+  view.ox = (cv.width - img.width*view.scale)/2;
+  view.oy = (cv.height - img.height*view.scale)/2;
+  draw();
+}
+
+const toScreen = (mx,my)=>({x: mx*view.scale+view.ox, y: my*view.scale+view.oy});
+const toMap    = (x,y)=>({mx:(x-view.ox)/view.scale, my:(y-view.oy)/view.scale});
+const metersPerImgPx = ()=> curMap.size / img.width;
+
+function draw(){
+  ctx.clearRect(0,0,cv.width,cv.height);
+  if(!imgLoaded) return;
+  ctx.imageSmoothingQuality='high';
+  ctx.drawImage(img, view.ox, view.oy, img.width*view.scale, img.height*view.scale);
+  if(document.getElementById('gridToggle').checked) drawGrid();
+  drawMeasure();
+  document.getElementById('zoompct').textContent = Math.round(view.scale/baseScale*100)+'%';
+}
+
+function drawGrid(){
+  const mpp = metersPerImgPx();
+  const stepImg = GRID_STEP / mpp;
+  const stepScr = stepImg * view.scale;
+  if(stepScr < 6) return;
+  const showLbl = stepScr>34;
+  ctx.lineWidth = 1; ctx.font = '10px Segoe UI';
+  for(let mx=0; mx<=img.width+0.5; mx+=stepImg){
+    const x = mx*view.scale+view.ox;
+    if(x< -1 || x>cv.width+1) continue;
+    const km = Math.round(mx*mpp)%1000===0;
+    ctx.strokeStyle = km ? 'rgba(240,160,32,.55)' : 'rgba(255,255,255,.18)';
+    ctx.beginPath(); ctx.moveTo(x, Math.max(view.oy,0)); ctx.lineTo(x, Math.min(view.oy+img.height*view.scale, cv.height)); ctx.stroke();
+  }
+  for(let my=0; my<=img.height+0.5; my+=stepImg){
+    const y = my*view.scale+view.oy;
+    if(y< -1 || y>cv.height+1) continue;
+    const km = Math.round(my*mpp)%1000===0;
+    ctx.strokeStyle = km ? 'rgba(240,160,32,.55)' : 'rgba(255,255,255,.18)';
+    ctx.beginPath(); ctx.moveTo(Math.max(view.ox,0), y); ctx.lineTo(Math.min(view.ox+img.width*view.scale, cv.width), y); ctx.stroke();
+  }
+  if(showLbl){
+    ctx.fillStyle='rgba(255,206,77,.9)';
+    for(let mx=0; mx<=img.width+0.5; mx+=stepImg){
+      const m=Math.round(mx*mpp); if(m%1000!==0) continue;
+      const x=mx*view.scale+view.ox; if(x<0||x>cv.width) continue;
+      ctx.fillText((m/1000)+'km', x+2, Math.max(view.oy,0)+12);
+    }
+  }
+}
+
+function dot(s,color){
+  ctx.fillStyle=color; ctx.beginPath(); ctx.arc(s.x,s.y,6,0,7); ctx.fill();
+  ctx.strokeStyle='#fff'; ctx.lineWidth=2; ctx.stroke();
+}
+function lineLabel(a,b,text,color){
+  const mx=(a.x+b.x)/2, my=(a.y+b.y)/2;
+  ctx.font='bold 13px Segoe UI'; const w=ctx.measureText(text).width;
+  ctx.fillStyle='rgba(16,20,26,.85)'; ctx.fillRect(mx-w/2-6, my-20, w+12, 18);
+  ctx.fillStyle=color; ctx.fillText(text, mx-w/2, my-7);
+}
+
+function drawMeasure(){
+  // готовая линия (2 точки)
+  if(points.length===2){
+    const a=toScreen(points[0].mx,points[0].my), b=toScreen(points[1].mx,points[1].my);
+    ctx.strokeStyle='#ffce4d'; ctx.lineWidth=2; ctx.setLineDash([6,5]);
+    ctx.beginPath(); ctx.moveTo(a.x,a.y); ctx.lineTo(b.x,b.y); ctx.stroke(); ctx.setLineDash([]);
+    lineLabel(a,b, metersBetween(points[0],points[1])+' '+UNIT, '#ffce4d');
+  }
+  // ПРЕВЬЮ-линия: первая точка стоит, тянемся за курсором
+  if(points.length===1 && hover){
+    const a=toScreen(points[0].mx,points[0].my), b=toScreen(hover.mx,hover.my);
+    ctx.strokeStyle='rgba(255,206,77,.45)'; ctx.lineWidth=2; ctx.setLineDash([5,5]);
+    ctx.beginPath(); ctx.moveTo(a.x,a.y); ctx.lineTo(b.x,b.y); ctx.stroke(); ctx.setLineDash([]);
+    ctx.globalAlpha=.6; dot(b,'#f0a020'); ctx.globalAlpha=1;
+    lineLabel(a,b, metersBetween(points[0],hover)+' '+UNIT, 'rgba(255,206,77,.85)');
+  }
+  // точки поверх
+  points.forEach((p,i)=> dot(toScreen(p.mx,p.my), i===0?'#3fb950':'#f0a020'));
+}
+
+function metersBetween(p,q){
+  const mpp=metersPerImgPx();
+  return Math.round(Math.hypot((q.mx-p.mx)*mpp,(q.my-p.my)*mpp));
+}
+function measure(){ return points.length<2?0:metersBetween(points[0],points[1]); }
+function updateDist(){ document.getElementById('distVal').textContent = measure(); }
+
+function zoomAt(x,y,factor){
+  const m=toMap(x,y);
+  view.scale = Math.min(baseScale*40, Math.max(baseScale*0.3, view.scale*factor));
+  view.ox = x - m.mx*view.scale; view.oy = y - m.my*view.scale; draw();
+}
+
+cv.addEventListener('wheel', e=>{ e.preventDefault(); zoomAt(e.offsetX,e.offsetY, e.deltaY<0?1.15:1/1.15); },{passive:false});
+function clearPoints(){ points=[]; hover=null; updateDist(); draw(); }
+cv.addEventListener('mousedown', e=>{
+  if(e.button===2 || e.button===1){ drag={x:e.offsetX,y:e.offsetY,ox:view.ox,oy:view.oy,btn:e.button,moved:false}; }
+});
+window.addEventListener('mousemove', e=>{
+  const r=cv.getBoundingClientRect();
+  if(drag){
+    if(Math.hypot(e.clientX-r.left-drag.x, e.clientY-r.top-drag.y)>4) drag.moved=true;
+    view.ox=drag.ox+(e.clientX-r.left-drag.x); view.oy=drag.oy+(e.clientY-r.top-drag.y); draw(); return;
+  }
+  if(points.length===1 && e.target===cv){ var hm=toMap(e.clientX-r.left, e.clientY-r.top); hm.mx=Math.max(0,Math.min(img.width,hm.mx)); hm.my=Math.max(0,Math.min(img.height,hm.my)); hover=hm; draw(); }
+});
+window.addEventListener('mouseup', e=>{
+  if(drag && drag.btn===2 && !drag.moved){ clearPoints(); }  // ПКМ-клик без перетаскивания — сброс
+  drag=null;
+});
+window.addEventListener('keydown', e=>{ if(e.key==='Backspace'){ e.preventDefault(); clearPoints(); } }); // Backspace — сброс
+cv.addEventListener('contextmenu', e=>e.preventDefault());
+cv.addEventListener('mouseleave', ()=>{ if(points.length===1){ hover=null; draw(); } });
+
+let downPos=null;
+cv.addEventListener('mousedown', e=>{ if(e.button===0) downPos={x:e.offsetX,y:e.offsetY}; });
+cv.addEventListener('mouseup', e=>{
+  if(e.button!==0 || !downPos) return;
+  if(Math.hypot(e.offsetX-downPos.x, e.offsetY-downPos.y)>4){ downPos=null; return; }
+  const m=toMap(e.offsetX,e.offsetY);
+  if(m.mx<0||m.my<0||m.mx>img.width||m.my>img.height){ downPos=null; return; } // только в пределах карты
+  if(points.length>=2){ points=[]; }
+  points.push(m);
+  if(points.length===2) hover=null;
+  updateDist(); draw(); downPos=null;
+});
+
+function buildMapList(){
+  const box=document.getElementById('mapList'); box.innerHTML='';
+  MAPS.forEach(m=>{
+    const km=(m.size/1000);
+    const nm=(I18N[LANG].maps && I18N[LANG].maps[m.id]) || m.name;
+    const b=document.createElement('div');
+    b.className='map-btn'+(m.id===curMap.id?' active':'');
+    b.dataset.id=m.id;
+    b.innerHTML='<span>'+nm+'</span><small>'+km+'×'+km+' km</small>';
+    b.onclick=()=>loadMap(m);
+    box.appendChild(b);
+  });
+}
+document.getElementById('gridToggle').onchange=draw;
+document.getElementById('clearBtn').onclick=clearPoints;
+document.getElementById('resetBtn').onclick=fitView;
+document.getElementById('zoomIn').onclick=()=>zoomAt(cv.width/2,cv.height/2,1.25);
+document.getElementById('zoomOut').onclick=()=>zoomAt(cv.width/2,cv.height/2,1/1.25);
+document.getElementById('zoompct').onclick=fitView;
+
+
+/* ==================== ПЕРЕВОДЫ ==================== */
+const I18N = {
+  de:{ sub:"PUBG Distanz- und Raster-Tool", maps_label:"Karten", settings:"Einstellungen", grid:"100-m-Raster",
+       clear:"Punkte löschen", reset:"Ansicht zurücksetzen", distance:"Distanz", unit:"m",
+       hint:"LMT — Punkt setzen · RMT halten — Karte bewegen · RMT-Klick / Rücktaste — Punkte löschen",
+       loading:"Karte wird geladen…",
+       maps:{erangel:"Erangel",miramar:"Miramar",taego:"Taego",deston:"Deston",rondo:"Rondo",vikendi:"Vikendi",sanhok:"Sanhok",paramo:"Paramo",karakin:"Karakin"} },
+  ko:{ sub:"PUBG 거리 및 그리드 도구", maps_label:"지도", settings:"설정", grid:"100m 그리드",
+       clear:"지점 지우기", reset:"보기 초기화", distance:"거리", unit:"m",
+       hint:"좌클릭 — 지점 추가 · 우클릭 누르기 — 지도 이동 · 우클릭 / 백스페이스 — 지점 지우기",
+       loading:"지도 불러오는 중…",
+       maps:{erangel:"에란겔",miramar:"미라마",taego:"태이고",deston:"데스턴",rondo:"론도",vikendi:"비켄디",sanhok:"사녹",paramo:"파라모",karakin:"카라킨"} },
+  vi:{ sub:"Công cụ đo khoảng cách và lưới PUBG", maps_label:"Bản đồ", settings:"Cài đặt", grid:"Lưới 100 m",
+       clear:"Xóa điểm", reset:"Đặt lại chế độ xem", distance:"Khoảng cách", unit:"m",
+       hint:"Chuột trái — thêm điểm · Giữ chuột phải — di chuyển bản đồ · Chuột phải / Backspace — xóa điểm",
+       loading:"Đang tải bản đồ…",
+       maps:{erangel:"Erangel",miramar:"Miramar",taego:"Taego",deston:"Deston",rondo:"Rondo",vikendi:"Vikendi",sanhok:"Sanhok",paramo:"Paramo",karakin:"Karakin"} },
+  en:{ sub:"PUBG distance & grid tool", maps_label:"Maps", settings:"Settings", grid:"100 m grid",
+       clear:"Clear points", reset:"Reset view", distance:"Distance", unit:"m",
+       hint:"LMB — add point · Hold RMB — pan map · RMB click / Backspace — clear points",
+       loading:"Loading map…",
+       maps:{erangel:"Erangel",miramar:"Miramar",taego:"Taego",deston:"Deston",rondo:"Rondo",vikendi:"Vikendi",sanhok:"Sanhok",paramo:"Paramo",karakin:"Karakin"} },
+  es:{ sub:"Herramienta de distancia y cuadrícula de PUBG", maps_label:"Mapas", settings:"Ajustes", grid:"Cuadrícula 100 m",
+       clear:"Borrar puntos", reset:"Restablecer vista", distance:"Distancia", unit:"m",
+       hint:"Clic izq — añadir punto · Mantén clic der — mover mapa · Clic der / Retroceso — borrar puntos",
+       loading:"Cargando mapa…",
+       maps:{erangel:"Erangel",miramar:"Miramar",taego:"Taego",deston:"Deston",rondo:"Rondo",vikendi:"Vikendi",sanhok:"Sanhok",paramo:"Páramo",karakin:"Karakin"} },
+  zh:{ sub:"PUBG 距离与网格工具", maps_label:"地图", settings:"设置", grid:"100 米网格",
+       clear:"清除点", reset:"重置视图", distance:"距离", unit:"米",
+       hint:"左键 — 添加点 · 按住右键 — 移动地图 · 右键单击 / 退格键 — 清除点",
+       loading:"加载地图…",
+       maps:{erangel:"艾伦格",miramar:"米拉玛",taego:"泰戈",deston:"帝斯顿",rondo:"荣都",vikendi:"维寒迪",sanhok:"萨诺",paramo:"帕拉莫",karakin:"卡拉金"} },
+  ua:{ sub:"Інструмент дистанції та сітки PUBG", maps_label:"Карти", settings:"Налаштування", grid:"Сітка 100 м",
+       clear:"Очистити точки", reset:"Скинути вид", distance:"Дистанція", unit:"м",
+       hint:"ЛКМ — створити точку · ПКМ затиснути — рухати карту · ПКМ-клік / Backspace — скинути точки",
+       loading:"Завантаження карти…",
+       maps:{erangel:"Ерангель",miramar:"Мірамар",taego:"Таего",deston:"Дестон",rondo:"Рондо",vikendi:"Вікенді",sanhok:"Санок",paramo:"Парамо",karakin:"Каракін"} },
+  ru:{ sub:"Инструмент дистанции и сетки PUBG", maps_label:"Карты", settings:"Настройки", grid:"Сетка 100 м",
+       clear:"Очистить точки", reset:"Сбросить вид", distance:"Дистанция", unit:"м",
+       hint:"ЛКМ — создать точку · ПКМ зажать — двигать карту · ПКМ-клик / Backspace — сбросить точки",
+       loading:"Загрузка карты…",
+       maps:{erangel:"Эрангель",miramar:"Мирамар",taego:"Таэго",deston:"Дестон",rondo:"Рондо",vikendi:"Викенди",sanhok:"Санок",paramo:"Парамо",karakin:"Каракин"} },
+};
+const FLAGS = {
+  de:'<svg viewBox="0 0 22 22"><rect width="22" height="22" fill="#000"/><rect y="7.33" width="22" height="7.33" fill="#dd0000"/><rect y="14.66" width="22" height="7.34" fill="#ffce00"/></svg>',
+  ko:'<svg viewBox="0 0 22 22"><rect width="22" height="22" fill="#fff"/><g><path d="M11 5 a3 3 0 0 1 0 6 a3 3 0 0 0 0 6 a6 6 0 0 1 0 -12 z" fill="#cd2e3a"/><path d="M11 5 a3 3 0 0 1 0 6 a3 3 0 0 0 0 6 a6 6 0 0 0 0 -12 z" fill="#0047a0"/></g><g stroke="#000" stroke-width="0.9"><line x1="3" y1="4" x2="6.2" y2="4"/><line x1="3" y1="5.6" x2="6.2" y2="5.6"/><line x1="3" y1="7.2" x2="6.2" y2="7.2"/><line x1="15.8" y1="4" x2="19" y2="4"/><line x1="15.8" y1="5.6" x2="17.0" y2="5.6"/><line x1="18.0" y1="5.6" x2="19" y2="5.6"/><line x1="15.8" y1="7.2" x2="19" y2="7.2"/><line x1="3" y1="14.8" x2="4.2" y2="14.8"/><line x1="5.0" y1="14.8" x2="6.2" y2="14.8"/><line x1="3" y1="16.4" x2="6.2" y2="16.4"/><line x1="3" y1="18.0" x2="4.2" y2="18.0"/><line x1="5.0" y1="18.0" x2="6.2" y2="18.0"/><line x1="15.8" y1="14.8" x2="17.0" y2="14.8"/><line x1="18.0" y1="14.8" x2="19" y2="14.8"/><line x1="15.8" y1="16.4" x2="17.0" y2="16.4"/><line x1="18.0" y1="16.4" x2="19" y2="16.4"/><line x1="15.8" y1="18.0" x2="17.0" y2="18.0"/><line x1="18.0" y1="18.0" x2="19" y2="18.0"/></g></svg>',
+  vi:'<svg viewBox="0 0 22 22"><rect width="22" height="22" fill="#da251d"/><polygon points="11.00,4.00 12.57,8.84 17.66,8.84 13.54,11.83 15.11,16.66 11.00,13.67 6.89,16.66 8.46,11.83 4.34,8.84 9.43,8.84" fill="#ffff00"/></svg>',
+  en:'<svg viewBox="0 0 22 22"><rect width="22" height="22" fill="#012169"/><path d="M0 0L22 22M22 0L0 22" stroke="#fff" stroke-width="3.2"/><path d="M0 0L22 22M22 0L0 22" stroke="#c8102e" stroke-width="1.4"/><rect x="9" width="4" height="22" fill="#fff"/><rect y="9" width="22" height="4" fill="#fff"/><rect x="9.8" width="2.4" height="22" fill="#c8102e"/><rect y="9.8" width="22" height="2.4" fill="#c8102e"/></svg>',
+  es:'<svg viewBox="0 0 22 22"><rect width="22" height="22" fill="#c60b1e"/><rect y="5.5" width="22" height="11" fill="#ffc400"/></svg>',
+  zh:'<svg viewBox="0 0 22 22"><rect width="22" height="22" fill="#de2910"/><polygon points="5.50,2.10 6.26,4.45 8.73,4.45 6.74,5.90 7.50,8.25 5.50,6.80 3.50,8.25 4.26,5.90 2.27,4.45 4.74,4.45" fill="#ffde00"/><polygon points="10.19,0.73 11.04,1.43 11.95,0.84 11.55,1.86 12.40,2.55 11.31,2.48 10.91,3.50 10.64,2.44 9.55,2.37 10.47,1.79" fill="#ffde00"/><polygon points="12.74,2.72 13.25,3.69 14.33,3.50 13.57,4.28 14.08,5.25 13.10,4.76 12.34,5.55 12.49,4.47 11.52,3.99 12.59,3.80" fill="#ffde00"/><polygon points="13.33,5.74 13.43,6.82 14.49,7.06 13.49,7.49 13.59,8.58 12.87,7.76 11.87,8.19 12.43,7.25 11.71,6.43 12.77,6.67" fill="#ffde00"/><polygon points="11.85,8.07 11.54,9.11 12.44,9.73 11.35,9.76 11.04,10.80 10.67,9.77 9.58,9.80 10.45,9.14 10.09,8.11 10.99,8.73" fill="#ffde00"/></svg>',
+  ua:'<svg viewBox="0 0 22 22"><rect width="22" height="11" fill="#0057b7"/><rect y="11" width="22" height="11" fill="#ffd700"/></svg>',
+  ru:'<svg viewBox="0 0 22 22"><rect width="22" height="22" fill="#fff"/><rect y="7.33" width="22" height="7.33" fill="#0039a6"/><rect y="14.66" width="22" height="7.34" fill="#d52b1e"/></svg>',
+};
+const HEART_SVG='<svg viewBox="0 0 24 24" fill="#ff5e9c"><path d="M12 21s-7.5-4.9-10-9.4C.3 8.3 1.9 4.8 5.3 4.8c2 0 3.4 1.1 4.2 2.4.8-1.3 2.2-2.4 4.2-2.4 3.4 0 5 3.5 3.3 6.8C19.5 16.1 12 21 12 21z"/></svg>';
+const SUPPORT={en:"Support",de:"Unterstützen",es:"Apóyame",ko:"후원하기",zh:"支持我",vi:"Ủng hộ",ua:"Підтримати",ru:"Поддержать"};
+const FEEDBACK_EMAIL="bogdanftomovic@gmail.com";
+const GMAIL_URL="https://mail.google.com/mail/?view=cm&fs=1&to="+FEEDBACK_EMAIL+"&su="+encodeURIComponent("PUBG Mortar Calc — feedback");
+const REPORTS={
+  en:{pre:"Found a problem or a bug? ",link:"Write to me",post:"."},
+  de:{pre:"Ein Problem oder einen Fehler gefunden? ",link:"Schreib mir",post:"."},
+  es:{pre:"¿Encontraste un problema o un error? ",link:"Escríbeme",post:"."},
+  ko:{pre:"문제나 버그를 발견하셨나요? ",link:"메일 보내기",post:""},
+  zh:{pre:"发现问题或错误？",link:"联系我",post:""},
+  vi:{pre:"Gặp sự cố hoặc lỗi? ",link:"Hãy viết cho tôi",post:"."},
+  ua:{pre:"Знайшли проблему або баг? ",link:"Напишіть",post:"."},
+  ru:{pre:"Столкнулись с проблемой или нашли баг? ",link:"Напишите",post:"."}
+};
+const LANG_NAMES={en:"English",de:"German",es:"Spanish",ko:"Korean",zh:"Chinese",vi:"Vietnamese",ua:"Ukrainian",ru:"Russian"};
+function buildLangBar(){
+  const bar=document.getElementById('langBar');
+  ['en','de','es','ko','zh','vi','ua','ru'].forEach(l=>{
+    const d=document.createElement('div');
+    d.className='flag'; d.dataset.lang=l; d.dataset.name=LANG_NAMES[l]||l.toUpperCase();
+    d.innerHTML=FLAGS[l]+'<span>'+l+'</span>';
+    d.onclick=()=>setLang(l);
+    bar.appendChild(d);
+  });
+}
+function setLang(l){
+  if(!I18N[l]) l='en';
+  LANG=l; const t=I18N[l]; UNIT=t.unit;
+  document.documentElement.lang=l;
+  document.getElementById('t-sub').textContent=t.sub;
+  document.getElementById('t-maps').textContent=t.maps_label;
+  document.getElementById('t-settings').textContent=t.settings;
+  document.getElementById('t-grid').textContent=t.grid;
+  document.getElementById('t-clear').textContent=t.clear;
+  document.getElementById('t-reset').textContent=t.reset;
+  document.getElementById('t-distance').textContent=t.distance;
+  document.getElementById('t-unit').textContent=t.unit;
+  document.getElementById('t-hint').textContent=t.hint;
+  document.getElementById('t-loading').textContent=t.loading;
+  const rp=REPORTS[l]||REPORTS.en;
+  document.getElementById('t-report').innerHTML=rp.pre+'<a href="'+GMAIL_URL+'" target="_blank" rel="noopener">'+rp.link+'</a>'+rp.post;
+  document.getElementById('t-support').innerHTML=HEART_SVG+'<span>'+(SUPPORT[l]||SUPPORT.en)+'</span>';
+  document.querySelectorAll('.flag').forEach(f=>f.classList.toggle('active', f.dataset.lang===l));
+  buildMapList(); draw();
+  try{ localStorage.setItem('mc_lang', l); }catch(e){}
+}
+
+buildLangBar();
+var savedLang='en'; try{ savedLang=localStorage.getItem('mc_lang')||'en'; }catch(e){}
+buildMapList(); resize(); loadMap(MAPS[0]); setLang(savedLang);
+</script>
+</body>
+</html>
