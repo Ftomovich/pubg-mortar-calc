@@ -71,6 +71,11 @@
   #hud .lbl{font-size:10px;letter-spacing:2px;color:var(--muted);text-transform:uppercase}
   #hud .val{font-size:26px;font-weight:700;color:var(--accent2);line-height:1.1}
   #hud .hint{font-size:10px;color:var(--muted);margin-top:3px}
+  #hudLoading{min-width:200px}
+  #hudLoading .load-title{font-size:17px;font-weight:700;color:var(--accent2);letter-spacing:.5px}
+  #hudLoading .load-sub{font-size:11px;color:var(--muted);margin-top:3px}
+  .load-dots::after{content:"";animation:loadDots 1.2s steps(4,end) infinite}
+  @keyframes loadDots{0%{content:""}25%{content:"."}50%{content:".."}75%{content:"..."}100%{content:""}}
 
   #zoombar{
     position:absolute;bottom:18px;left:50%;transform:translateX(-50%);
@@ -143,16 +148,21 @@
   <main id="main">
     <canvas id="cv"></canvas>
     <div id="hud">
-      <div class="lbl" id="t-distance">Дистанция</div>
-      <div class="val"><span id="distVal">0</span> <span id="t-unit">m</span></div>
-      <div class="hint" id="t-hint">ЛКМ — создать точку · ПКМ зажать — двигать карту · ПКМ-клик / Backspace — сбросить точки</div>
+      <div id="hudMain">
+        <div class="lbl" id="t-distance">Дистанция</div>
+        <div class="val"><span id="distVal">0</span> <span id="t-unit">m</span></div>
+        <div class="hint" id="t-hint">ЛКМ — создать точку · ПКМ зажать — двигать карту · ПКМ-клик / Backspace — сбросить точки</div>
+      </div>
+      <div id="hudLoading" style="display:none">
+        <div class="load-title" id="t-loading">Loading map</div>
+        <div class="load-sub"><span id="t-loadingSub">Please wait</span><span class="load-dots"></span></div>
+      </div>
     </div>
     <div id="zoombar">
       <button id="zoomOut" title="Уменьшить"><svg class="ic" viewBox="0 0 24 24" style="width:18px;height:18px"><line x1="5" y1="12" x2="19" y2="12"/></svg></button>
       <div id="zoompct">100%</div>
       <button id="zoomIn" title="Увеличить"><svg class="ic" viewBox="0 0 24 24" style="width:18px;height:18px"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></button>
     </div>
-    <div id="loading"><span id="t-loading">Загрузка карты…</span></div>
   </main>
 </div>
 
@@ -189,14 +199,17 @@ function resize(){
 }
 window.addEventListener('resize', resize);
 
+function showLoading(on){
+  document.getElementById('hudMain').style.display = on ? 'none' : 'block';
+  document.getElementById('hudLoading').style.display = on ? 'block' : 'none';
+}
 function loadMap(m){
   curMap = m; points = []; hover=null; imgLoaded = false;
-  document.getElementById('loading').style.display='flex';
+  showLoading(true);
   document.querySelectorAll('.map-btn').forEach(b=>b.classList.toggle('active', b.dataset.id===m.id));
   img = new Image();
-  img.onload = ()=>{ imgLoaded = true; document.getElementById('loading').style.display='none'; fitView(); };
-  img.onerror = ()=>{ document.getElementById('loading').innerHTML =
-      'Картинка не найдена:<br><code>'+m.img+'</code><br><small>положи HD-картинку в папку maps/</small>'; };
+  img.onload = ()=>{ imgLoaded = true; showLoading(false); fitView(); };
+  img.onerror = ()=>{ document.getElementById('t-loading').textContent='Image not found: '+m.img; };
   img.src = m.img;
   updateDist();
 }
@@ -359,42 +372,42 @@ const I18N = {
   de:{ sub:"PUBG Distanz- und Raster-Tool", maps_label:"Karten", settings:"Einstellungen", grid:"100-m-Raster",
        clear:"Punkte löschen", reset:"Ansicht zurücksetzen", distance:"Distanz", unit:"m",
        hint:"LMT — Punkt setzen · RMT halten — Karte bewegen · RMT-Klick / Rücktaste — Punkte löschen",
-       loading:"Karte wird geladen…",
+       loading:"Karte wird geladen", loadingSub:"Bitte warten",
        maps:{erangel:"Erangel",miramar:"Miramar",taego:"Taego",deston:"Deston",rondo:"Rondo",vikendi:"Vikendi",sanhok:"Sanhok",paramo:"Paramo",karakin:"Karakin"} },
   ko:{ sub:"PUBG 거리 및 그리드 도구", maps_label:"지도", settings:"설정", grid:"100m 그리드",
        clear:"지점 지우기", reset:"보기 초기화", distance:"거리", unit:"m",
        hint:"좌클릭 — 지점 추가 · 우클릭 누르기 — 지도 이동 · 우클릭 / 백스페이스 — 지점 지우기",
-       loading:"지도 불러오는 중…",
+       loading:"지도 불러오는 중", loadingSub:"잠시만 기다려 주세요",
        maps:{erangel:"에란겔",miramar:"미라마",taego:"태이고",deston:"데스턴",rondo:"론도",vikendi:"비켄디",sanhok:"사녹",paramo:"파라모",karakin:"카라킨"} },
   vi:{ sub:"Công cụ đo khoảng cách và lưới PUBG", maps_label:"Bản đồ", settings:"Cài đặt", grid:"Lưới 100 m",
        clear:"Xóa điểm", reset:"Đặt lại chế độ xem", distance:"Khoảng cách", unit:"m",
        hint:"Chuột trái — thêm điểm · Giữ chuột phải — di chuyển bản đồ · Chuột phải / Backspace — xóa điểm",
-       loading:"Đang tải bản đồ…",
+       loading:"Đang tải bản đồ", loadingSub:"Vui lòng đợi",
        maps:{erangel:"Erangel",miramar:"Miramar",taego:"Taego",deston:"Deston",rondo:"Rondo",vikendi:"Vikendi",sanhok:"Sanhok",paramo:"Paramo",karakin:"Karakin"} },
   en:{ sub:"PUBG distance & grid tool", maps_label:"Maps", settings:"Settings", grid:"100 m grid",
        clear:"Clear points", reset:"Reset view", distance:"Distance", unit:"m",
        hint:"LMB — add point · Hold RMB — pan map · RMB click / Backspace — clear points",
-       loading:"Loading map…",
+       loading:"Loading map", loadingSub:"Please wait",
        maps:{erangel:"Erangel",miramar:"Miramar",taego:"Taego",deston:"Deston",rondo:"Rondo",vikendi:"Vikendi",sanhok:"Sanhok",paramo:"Paramo",karakin:"Karakin"} },
   es:{ sub:"Herramienta de distancia y cuadrícula de PUBG", maps_label:"Mapas", settings:"Ajustes", grid:"Cuadrícula 100 m",
        clear:"Borrar puntos", reset:"Restablecer vista", distance:"Distancia", unit:"m",
        hint:"Clic izq — añadir punto · Mantén clic der — mover mapa · Clic der / Retroceso — borrar puntos",
-       loading:"Cargando mapa…",
+       loading:"Cargando mapa", loadingSub:"Por favor espera",
        maps:{erangel:"Erangel",miramar:"Miramar",taego:"Taego",deston:"Deston",rondo:"Rondo",vikendi:"Vikendi",sanhok:"Sanhok",paramo:"Páramo",karakin:"Karakin"} },
   zh:{ sub:"PUBG 距离与网格工具", maps_label:"地图", settings:"设置", grid:"100 米网格",
        clear:"清除点", reset:"重置视图", distance:"距离", unit:"米",
        hint:"左键 — 添加点 · 按住右键 — 移动地图 · 右键单击 / 退格键 — 清除点",
-       loading:"加载地图…",
+       loading:"正在加载地图", loadingSub:"请稍候",
        maps:{erangel:"艾伦格",miramar:"米拉玛",taego:"泰戈",deston:"帝斯顿",rondo:"荣都",vikendi:"维寒迪",sanhok:"萨诺",paramo:"帕拉莫",karakin:"卡拉金"} },
   ua:{ sub:"Інструмент дистанції та сітки PUBG", maps_label:"Карти", settings:"Налаштування", grid:"Сітка 100 м",
        clear:"Очистити точки", reset:"Скинути вид", distance:"Дистанція", unit:"м",
        hint:"ЛКМ — створити точку · ПКМ затиснути — рухати карту · ПКМ-клік / Backspace — скинути точки",
-       loading:"Завантаження карти…",
+       loading:"Завантаження карти", loadingSub:"Зачекайте, будь ласка",
        maps:{erangel:"Ерангель",miramar:"Мірамар",taego:"Таего",deston:"Дестон",rondo:"Рондо",vikendi:"Вікенді",sanhok:"Санок",paramo:"Парамо",karakin:"Каракін"} },
   ru:{ sub:"Инструмент дистанции и сетки PUBG", maps_label:"Карты", settings:"Настройки", grid:"Сетка 100 м",
        clear:"Очистить точки", reset:"Сбросить вид", distance:"Дистанция", unit:"м",
        hint:"ЛКМ — создать точку · ПКМ зажать — двигать карту · ПКМ-клик / Backspace — сбросить точки",
-       loading:"Загрузка карты…",
+       loading:"Загрузка карты", loadingSub:"Пожалуйста, подождите",
        maps:{erangel:"Эрангель",miramar:"Мирамар",taego:"Таэго",deston:"Дестон",rondo:"Рондо",vikendi:"Викенди",sanhok:"Санок",paramo:"Парамо",karakin:"Каракин"} },
 };
 const FLAGS = {
@@ -446,6 +459,7 @@ function setLang(l){
   document.getElementById('t-unit').textContent=t.unit;
   document.getElementById('t-hint').textContent=t.hint;
   document.getElementById('t-loading').textContent=t.loading;
+  document.getElementById('t-loadingSub').textContent=t.loadingSub;
   const rp=REPORTS[l]||REPORTS.en;
   document.getElementById('t-report').innerHTML=rp.pre+'<a href="'+GMAIL_URL+'" target="_blank" rel="noopener">'+rp.link+'</a>'+rp.post;
   document.getElementById('t-support').innerHTML=HEART_SVG+'<span>'+(SUPPORT[l]||SUPPORT.en)+'</span>';
@@ -456,7 +470,7 @@ function setLang(l){
 
 buildLangBar();
 var savedLang='en'; try{ savedLang=localStorage.getItem('mc_lang')||'en'; }catch(e){}
-buildMapList(); resize(); loadMap(MAPS[0]); setLang(savedLang);
+buildMapList(); resize(); loadMap(MAPS[0]); setLang('en');
 </script>
 </body>
 </html>
