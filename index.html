@@ -4,6 +4,9 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>PUBG Mortar / Distance Calculator</title>
+<link rel="icon" href="favicon.ico" sizes="any">
+<link rel="icon" type="image/png" href="favicon.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
 <style>
   :root{
     --bg:#0e1116; --panel:#161b22; --panel2:#1c232d; --line:#2a323d;
@@ -92,6 +95,48 @@
   #zoompct{min-width:62px;text-align:center;font-size:14px;font-weight:600;cursor:pointer}
   #zoompct:hover{color:var(--accent2)}
 
+  /* ---------- MINI WINDOW (Picture-in-Picture) ---------- */
+  #pipBtn{position:absolute;top:14px;right:14px;padding:8px 12px;background:rgba(16,20,26,.9);backdrop-filter:blur(6px);
+    box-shadow:0 4px 20px rgba(0,0,0,.4);font-weight:600}
+  #pipBar{display:none}
+  #pipHolder{display:none;flex:1;align-items:center;justify-content:center;flex-direction:column;gap:14px;
+    background:#0a0d12;color:var(--muted);font-size:14px;text-align:center;padding:20px}
+  #pipHolder svg.ic{width:42px;height:42px;color:var(--accent)}
+  body.pip-open #pipHolder{display:flex}
+
+  /* внутри мини-окна */
+  body.pip #main{position:fixed;inset:0}
+  body.pip #pipBtn{display:none}
+  body.pip #pipBar{display:flex;position:absolute;top:8px;left:8px;gap:6px;align-items:center}
+  body.pip #pipBar select{background:rgba(16,20,26,.9);color:var(--text);border:1px solid var(--line);border-radius:8px;
+    padding:6px 8px;font-size:13px;cursor:pointer;outline:none}
+  body.pip #pipBar select:hover{border-color:var(--accent)}
+  body.pip #hud{top:8px;left:auto;right:8px;transform:none;padding:4px 12px}
+  body.pip #hud .hint, body.pip #hud .lbl{display:none}
+  body.pip #hud .val{font-size:22px}
+  body.pip #hudLoading{min-width:0}
+  body.pip #hudLoading .load-title{font-size:14px}
+  body.pip #zoombar{bottom:8px;padding:3px}
+  body.pip #zoombar button{width:30px;height:28px}
+  body.pip #zoompct{min-width:52px;font-size:12px}
+  /* кнопка «свернуть» на левом краю мини-окна */
+  #pipMini,#pipExpand{display:none}
+  body.pip #pipMini{display:flex;align-items:center;justify-content:center;position:absolute;left:8px;top:50%;transform:translateY(-50%);
+    width:34px;height:34px;padding:0;background:rgba(16,20,26,.9);border:1px solid transparent;border-radius:8px;
+    color:var(--text);cursor:pointer;transition:.15s;box-shadow:0 4px 14px rgba(0,0,0,.4)}
+  body.pip #pipMini:hover{color:var(--accent2);border-color:var(--accent)}
+  body.pip #pipMini svg.ic{width:20px;height:20px;flex-basis:20px}
+  /* свёрнутое состояние: вместо карты — кнопка «Развернуть» и последняя дистанция */
+  body.pip.mini #main > :not(#pipExpand){display:none !important}
+  body.pip.mini #pipExpand{display:flex;position:fixed;inset:0;align-items:center;justify-content:center;gap:12px;
+    background:var(--panel);color:var(--text);cursor:pointer;border:none;padding:0 12px}
+  body.pip.mini #pipExpand:hover{background:#222b36;color:var(--accent2)}
+  #pipExpand svg.ic{width:30px;height:30px;flex-basis:30px;color:var(--accent)}
+  #pipExpand .txt{display:flex;flex-direction:column;align-items:flex-start;line-height:1.2}
+  #t-pipExpand{font-size:16px;font-weight:600}
+  #pipDist{font-size:13px;font-weight:700;color:var(--accent2)}
+  #pipDist:empty{display:none}
+
 
   #langBar{display:grid;grid-template-columns:repeat(4,1fr);gap:10px 6px;margin-top:auto;margin-bottom:60px;padding-top:14px}
   .flag{position:relative;display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer;opacity:.5;transition:.15s}
@@ -161,24 +206,43 @@
       <div id="zoompct">100%</div>
       <button id="zoomIn" title="Увеличить"><svg class="ic" viewBox="0 0 24 24" style="width:18px;height:18px"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></button>
     </div>
+    <button class="btn" id="pipBtn">
+      <svg class="ic" viewBox="0 0 24 24"><rect x="2" y="4" width="20" height="16" rx="2"/><rect x="12" y="11" width="8" height="7" rx="1"/></svg>
+      <span id="t-pip">Open in window</span>
+    </button>
+    <div id="pipBar"><select id="pipMap"></select></div>
+    <button id="pipMini"><svg class="ic" viewBox="0 0 24 24"><rect x="2" y="2" width="20" height="20" rx="5"/><path d="M6.5 6.5l4.5 4.5M7 11h4V7M17.5 17.5L13 13M17 13h-4v4"/></svg></button>
+    <button id="pipExpand">
+      <svg class="ic" viewBox="0 0 24 24"><path d="M9.5 20H3.5A1.5 1.5 0 0 1 2 18.5v-15A1.5 1.5 0 0 1 3.5 2h17A1.5 1.5 0 0 1 22 3.5V9"/><rect x="12" y="12.5" width="10" height="7.5" rx="1.5"/><path d="M9.5 9.5L5 5M5 9V5h4"/></svg>
+      <span class="txt"><span id="t-pipExpand">Expand</span><span id="pipDist"></span></span>
+    </button>
   </main>
+  <div id="pipHolder">
+    <svg class="ic" viewBox="0 0 24 24"><rect x="2" y="4" width="20" height="16" rx="2"/><rect x="12" y="11" width="8" height="7" rx="1"/></svg>
+    <div id="t-pipActive">The map is open in a mini window</div>
+    <button class="btn" id="pipBack"><span id="t-pipBack">Bring back here</span></button>
+  </div>
 </div>
 
 <script>
+// tiles:true — карта нарезана на квадраты 1×1 км: maps/<id>/preview.jpg + maps/<id>/<ряд>_<колонка>.jpg
 const MAPS = [
-  { id:"erangel",  name:"Erangel",  size:8000, img:"maps/erangel.png" },
-  { id:"miramar",  name:"Miramar",  size:8000, img:"maps/miramar.png" },
+  { id:"erangel",  name:"Erangel",  size:8000, img:"maps/erangel/preview.jpg", tiles:true },
+  { id:"miramar",  name:"Miramar",  size:8000, img:"maps/miramar/preview.jpg", tiles:true },
   { id:"taego",    name:"Taego",    size:8000, img:"maps/taego.png" },
   { id:"deston",   name:"Deston",   size:8000, img:"maps/deston.png" },
   { id:"rondo",    name:"Rondo",    size:8000, img:"maps/rondo.png" },
-  { id:"vikendi",  name:"Vikendi",  size:6000, img:"maps/vikendi.png" },
-  { id:"sanhok",   name:"Sanhok",   size:4000, img:"maps/sanhok.png" },
+  { id:"vikendi",  name:"Vikendi",  size:6000, img:"maps/vikendi/preview.jpg", tiles:true },
+  { id:"sanhok",   name:"Sanhok",   size:4000, img:"maps/sanhok/preview.jpg", tiles:true },
   { id:"paramo",   name:"Paramo",   size:3000, img:"maps/paramo.png" },
   { id:"karakin",  name:"Karakin",  size:2000, img:"maps/karakin.png" },
 ];
 const GRID_STEP = 100;
 
-const cv = document.getElementById('cv');
+// элементы карты могут жить в мини-окне (Picture-in-Picture), поэтому ищем и там
+let pipWin = null;
+const byId = id => document.getElementById(id) || (pipWin ? pipWin.document.getElementById(id) : null);
+const cv = byId('cv');
 const ctx = cv.getContext('2d');
 let view = { scale:1, ox:0, oy:0 };
 let img = new Image();
@@ -191,23 +255,24 @@ let baseScale = 1;
 let UNIT='m'; let LANG='en';
 
 function resize(){
-  const r = document.getElementById('main').getBoundingClientRect();
+  const r = byId('main').getBoundingClientRect();
   cv.width = r.width; cv.height = r.height;
   draw();
 }
 window.addEventListener('resize', resize);
 
 function showLoading(on){
-  document.getElementById('hudMain').style.display = on ? 'none' : 'block';
-  document.getElementById('hudLoading').style.display = on ? 'block' : 'none';
+  byId('hudMain').style.display = on ? 'none' : 'block';
+  byId('hudLoading').style.display = on ? 'block' : 'none';
 }
 function loadMap(m){
   curMap = m; points = []; hover=null; imgLoaded = false;
   showLoading(true);
   document.querySelectorAll('.map-btn').forEach(b=>b.classList.toggle('active', b.dataset.id===m.id));
+  byId('pipMap').value = m.id;
   img = new Image();
   img.onload = ()=>{ imgLoaded = true; showLoading(false); fitView(); };
-  img.onerror = ()=>{ document.getElementById('t-loading').textContent='Image not found: '+m.img; };
+  img.onerror = ()=>{ byId('t-loading').textContent='Image not found: '+m.img; };
   img.src = m.img;
   updateDist();
 }
@@ -230,9 +295,36 @@ function draw(){
   if(!imgLoaded) return;
   ctx.imageSmoothingQuality='high';
   ctx.drawImage(img, view.ox, view.oy, img.width*view.scale, img.height*view.scale);
-  if(document.getElementById('gridToggle').checked) drawGrid();
+  if(curMap.tiles) drawTiles();
+  if(byId('gridToggle').checked) drawGrid();
   drawMeasure();
-  document.getElementById('zoompct').textContent = Math.round(view.scale/baseScale*100)+'%';
+  byId('zoompct').textContent = Math.round(view.scale/baseScale*100)+'%';
+}
+
+// ---------- тайлы 1×1 км: грузятся только видимые и только когда превью уже не хватает ----------
+const tileCache = {};        // "id/r_c" -> Image
+let redrawQueued = false;
+function queueDraw(){ if(redrawQueued) return; redrawQueued=true; requestAnimationFrame(()=>{ redrawQueued=false; draw(); }); }
+function drawTiles(){
+  if(view.scale < 1.1) return;   // превью ещё резкое — тайлы не нужны
+  const n = curMap.size/1000, T = img.width/n, Ts = T*view.scale;
+  const c0=Math.max(0,Math.floor(-view.ox/Ts)), c1=Math.min(n-1,Math.floor((cv.width-view.ox)/Ts));
+  const r0=Math.max(0,Math.floor(-view.oy/Ts)), r1=Math.min(n-1,Math.floor((cv.height-view.oy)/Ts));
+  for(let r=r0;r<=r1;r++) for(let c=c0;c<=c1;c++){
+    const key=curMap.id+'/'+r+'_'+c;
+    let t=tileCache[key];
+    if(!t){
+      t=tileCache[key]=new Image();
+      const id=curMap.id;
+      t.onload=()=>{ if(curMap.id===id) queueDraw(); };
+      t.src='maps/'+key+'.jpg';
+    }
+    if(!t.complete || !t.naturalWidth) continue;
+    // округляем края, чтобы между соседними тайлами не было щелей
+    const x0=Math.round(view.ox+c*Ts), x1=Math.round(view.ox+(c+1)*Ts);
+    const y0=Math.round(view.oy+r*Ts), y1=Math.round(view.oy+(r+1)*Ts);
+    ctx.drawImage(t, x0, y0, x1-x0, y1-y0);
+  }
 }
 
 function drawGrid(){
@@ -302,7 +394,10 @@ function metersBetween(p,q){
   return Math.round(Math.hypot((q.mx-p.mx)*mpp,(q.my-p.my)*mpp));
 }
 function measure(){ return points.length<2?0:metersBetween(points[0],points[1]); }
-function updateDist(){ document.getElementById('distVal').textContent = measure(); }
+function updateDist(){
+  byId('distVal').textContent = measure();
+  byId('pipDist').textContent = measure() ? measure()+' '+UNIT : '';
+}
 
 function zoomAt(x,y,factor){
   const m=toMap(x,y);
@@ -315,19 +410,25 @@ function clearPoints(){ points=[]; hover=null; updateDist(); draw(); }
 cv.addEventListener('mousedown', e=>{
   if(e.button===2 || e.button===1){ drag={x:e.offsetX,y:e.offsetY,ox:view.ox,oy:view.oy,btn:e.button,moved:false}; }
 });
-window.addEventListener('mousemove', e=>{
+function onMouseMove(e){
   const r=cv.getBoundingClientRect();
   if(drag){
     if(Math.hypot(e.clientX-r.left-drag.x, e.clientY-r.top-drag.y)>4) drag.moved=true;
     view.ox=drag.ox+(e.clientX-r.left-drag.x); view.oy=drag.oy+(e.clientY-r.top-drag.y); draw(); return;
   }
   if(points.length===1 && e.target===cv){ var hm=toMap(e.clientX-r.left, e.clientY-r.top); hm.mx=Math.max(0,Math.min(img.width,hm.mx)); hm.my=Math.max(0,Math.min(img.height,hm.my)); hover=hm; draw(); }
-});
-window.addEventListener('mouseup', e=>{
+}
+function onMouseUp(e){
   if(drag && drag.btn===2 && !drag.moved){ clearPoints(); }  // ПКМ-клик без перетаскивания — сброс
   drag=null;
-});
-window.addEventListener('keydown', e=>{ if(e.key==='Backspace'){ e.preventDefault(); clearPoints(); } }); // Backspace — сброс
+}
+function onKeyDown(e){ if(e.key==='Backspace'){ e.preventDefault(); clearPoints(); } } // Backspace — сброс
+function bindWindowEvents(w){
+  w.addEventListener('mousemove', onMouseMove);
+  w.addEventListener('mouseup', onMouseUp);
+  w.addEventListener('keydown', onKeyDown);
+}
+bindWindowEvents(window);
 cv.addEventListener('contextmenu', e=>e.preventDefault());
 cv.addEventListener('mouseleave', ()=>{ if(points.length===1){ hover=null; draw(); } });
 
@@ -345,7 +446,7 @@ cv.addEventListener('mouseup', e=>{
 });
 
 function buildMapList(){
-  const box=document.getElementById('mapList'); box.innerHTML='';
+  const box=byId('mapList'); box.innerHTML='';
   MAPS.forEach(m=>{
     const km=(m.size/1000);
     const nm=(I18N[LANG].maps && I18N[LANG].maps[m.id]) || m.name;
@@ -356,13 +457,116 @@ function buildMapList(){
     b.onclick=()=>loadMap(m);
     box.appendChild(b);
   });
+  // тот же список карт для мини-окна
+  const sel=byId('pipMap'); sel.innerHTML='';
+  MAPS.forEach(m=>{
+    const o=document.createElement('option');
+    o.value=m.id; o.textContent=((I18N[LANG].maps && I18N[LANG].maps[m.id]) || m.name)+'  '+(m.size/1000)+'×'+(m.size/1000)+' km';
+    sel.appendChild(o);
+  });
+  sel.value=curMap.id;
 }
-document.getElementById('gridToggle').onchange=draw;
-document.getElementById('clearBtn').onclick=clearPoints;
-document.getElementById('resetBtn').onclick=fitView;
-document.getElementById('zoomIn').onclick=()=>zoomAt(cv.width/2,cv.height/2,1.25);
-document.getElementById('zoomOut').onclick=()=>zoomAt(cv.width/2,cv.height/2,1/1.25);
-document.getElementById('zoompct').onclick=fitView;
+byId('pipMap').onchange=e=>loadMap(MAPS.find(m=>m.id===e.target.value));
+
+/* ==================== МИНИ-ОКНО ПОВЕРХ ИГРЫ (Document Picture-in-Picture) ==================== */
+// Что умеет Chrome с PiP-окном (проверено): двигать его сайту нельзя (moveTo игнорируется),
+// менять размер — один раз на клик, новое окно с preferInitialWindowPlacement встаёт в правый нижний угол экрана,
+// а без него — туда и такого размера, каким было прошлое закрытое окно (отсюда «крошечное» окно после закрытия плашки).
+const PIP_SIZE = [480, 520];      // размер по умолчанию
+const PIP_MINI = [200, 60];       // плашка; Chrome сам не даст сделать окно меньше своего минимума
+let pipFullSize = null;           // [w,h] развёрнутого окна (innerWidth/innerHeight — outerWidth у PiP врёт)
+const lsGet = k => { try{ return localStorage.getItem(k); }catch(e){ return null; } };
+const lsSet = (k,v) => { try{ localStorage.setItem(k,v); }catch(e){} };
+const homeMain = main => document.getElementById('app').insertBefore(main, document.getElementById('pipHolder'));
+
+// открыть PiP-окно (уже открытое при этом закроется само) и перенести в него карту
+async function requestPip(opts, mini){
+  const old = pipWin, main = byId('main');
+  if(old){ old.removeEventListener('pagehide', closePip); homeMain(main); }
+  let w;
+  try{ w = await documentPictureInPicture.requestWindow(opts); }
+  catch(err){
+    if(old && !old.closed){ old.document.body.appendChild(main); old.addEventListener('pagehide', closePip); }
+    else { pipWin = old; closePip(); }
+    if(!old) alert((PIP_TEXT[LANG]||PIP_TEXT.en).unsupported);
+    return false;
+  }
+  pipWin = w;
+  document.querySelectorAll('style').forEach(s=>w.document.head.appendChild(s.cloneNode(true)));
+  w.document.title = 'Mortar Calc';
+  w.document.body.className = mini ? 'pip mini' : 'pip';
+  w.document.body.appendChild(main);
+  document.body.classList.add('pip-open');
+  bindWindowEvents(w);
+  w.addEventListener('resize', onPipResize);
+  w.addEventListener('pagehide', closePip);   // пользователь закрыл мини-окно
+  resize();
+  return true;
+}
+function onPipResize(){
+  resize();
+  const w = pipWin;
+  if(w && !w.document.body.classList.contains('mini')){
+    pipFullSize = [w.innerWidth, w.innerHeight];
+    lsSet('mc_pip_size', pipFullSize.join('x'));
+  }
+}
+async function openPip(){
+  if(pipWin){ pipWin.focus(); return; }
+  if(!('documentPictureInPicture' in window)){ alert((PIP_TEXT[LANG]||PIP_TEXT.en).unsupported); return; }
+  const saved = (lsGet('mc_pip_size')||'').split('x').map(Number);
+  const size = saved.length===2 && saved[0]>=300 && saved[1]>=250 ? saved : PIP_SIZE;
+  const opts = { width:size[0], height:size[1] };
+  // прошлое окно закрыли свёрнутым — Chrome запомнил плашку; просим обычное место и нормальный размер
+  if(lsGet('mc_pip_closed_mini')==='1') opts.preferInitialWindowPlacement = true;
+  if(await requestPip(opts, false)){ pipFullSize = [pipWin.innerWidth, pipWin.innerHeight]; fitView(); }
+}
+
+// свернуть в плашку, «примагнитив» её к ближайшему углу экрана
+function collapsePip(){
+  const w = pipWin; if(!w) return;
+  pipFullSize = [w.innerWidth, w.innerHeight];
+  lsSet('mc_pip_size', pipFullSize.join('x'));
+  const s = w.screen;
+  const right  = w.screenX - (s.availLeft||0) + w.innerWidth/2  > s.availWidth/2;
+  const bottom = w.screenY - (s.availTop||0)  + w.innerHeight/2 > s.availHeight/2;
+  if(right && bottom){
+    // правый нижний угол — туда Chrome сам ставит новое окно: переоткрываем сразу плашкой
+    requestPip({ width:PIP_MINI[0], height:PIP_MINI[1], preferInitialWindowPlacement:true }, true);
+  } else {
+    // остальные углы: окно можно только уменьшить, левый верхний угол при этом остаётся на месте
+    w.document.body.classList.add('mini');
+    try{ w.resizeBy(PIP_MINI[0] - w.innerWidth, PIP_MINI[1] - w.innerHeight); }catch(err){}
+  }
+}
+// развернуть: окно растёт вправо-вниз, а у края экрана Chrome прижимает его обратно — из угла оно раскрывается от угла
+function expandPip(){
+  const w = pipWin; if(!w) return;
+  const size = pipFullSize || PIP_SIZE;
+  w.document.body.classList.remove('mini');
+  try{ w.resizeBy(size[0] - w.innerWidth, size[1] - w.innerHeight); }catch(err){}
+  resize();
+}
+byId('pipMini').onclick=collapsePip;
+byId('pipExpand').onclick=expandPip;
+
+function closePip(){
+  if(!pipWin) return;
+  lsSet('mc_pip_closed_mini', pipWin.document.body.classList.contains('mini') ? '1' : '0');
+  const main = pipWin.document.getElementById('main');
+  pipWin = null; drag = null;
+  if(main) homeMain(main);
+  document.body.classList.remove('pip-open');
+  resize(); fitView();
+}
+byId('pipBtn').onclick=openPip;
+byId('pipBack').onclick=()=>{ if(pipWin) pipWin.close(); };
+byId('gridToggle').onchange=draw;
+byId('clearBtn').onclick=clearPoints;
+byId('resetBtn').onclick=fitView;
+byId('zoomIn').onclick=()=>zoomAt(cv.width/2,cv.height/2,1.25);
+byId('zoomOut').onclick=()=>zoomAt(cv.width/2,cv.height/2,1/1.25);
+byId('zoompct').onclick=fitView;
 
 
 /* ==================== ПЕРЕВОДЫ ==================== */
@@ -419,6 +623,16 @@ const FLAGS = {
   ru:'<svg viewBox="0 0 22 22"><rect width="22" height="22" fill="#fff"/><rect y="7.33" width="22" height="7.33" fill="#0039a6"/><rect y="14.66" width="22" height="7.34" fill="#d52b1e"/></svg>',
 };
 const HEART_SVG='<svg viewBox="0 0 24 24" fill="#ff5e9c"><path d="M12 21s-7.5-4.9-10-9.4C.3 8.3 1.9 4.8 5.3 4.8c2 0 3.4 1.1 4.2 2.4.8-1.3 2.2-2.4 4.2-2.4 3.4 0 5 3.5 3.3 6.8C19.5 16.1 12 21 12 21z"/></svg>';
+const PIP_TEXT={
+  en:{btn:"Open in window",mini:"Collapse",expand:"Expand",active:"The map is open in a mini window",back:"Bring back here",unsupported:"The mini window works only in Chrome, Edge or Opera (version 116+)."},
+  de:{btn:"Im Fenster öffnen",mini:"Einklappen",expand:"Ausklappen",active:"Die Karte ist im Mini-Fenster geöffnet",back:"Hierher zurückholen",unsupported:"Das Mini-Fenster funktioniert nur in Chrome, Edge oder Opera (ab Version 116)."},
+  es:{btn:"Abrir en ventana",mini:"Contraer",expand:"Expandir",active:"El mapa está abierto en una mini ventana",back:"Traer de vuelta",unsupported:"La mini ventana solo funciona en Chrome, Edge u Opera (versión 116+)."},
+  ko:{btn:"창으로 열기",mini:"접기",expand:"펼치기",active:"지도가 미니 창에서 열려 있습니다",back:"여기로 되돌리기",unsupported:"미니 창은 Chrome, Edge, Opera(116 이상)에서만 작동합니다."},
+  zh:{btn:"在小窗口中打开",mini:"收起",expand:"展开",active:"地图已在小窗口中打开",back:"移回此处",unsupported:"小窗口仅支持 Chrome、Edge 或 Opera（116 及以上版本）。"},
+  vi:{btn:"Mở trong cửa sổ",mini:"Thu nhỏ",expand:"Mở rộng",active:"Bản đồ đang mở trong cửa sổ nhỏ",back:"Đưa về đây",unsupported:"Cửa sổ nhỏ chỉ hoạt động trên Chrome, Edge hoặc Opera (phiên bản 116+)."},
+  ua:{btn:"Відкрити у вікні",mini:"Згорнути",expand:"Розгорнути",active:"Карта відкрита в міні-вікні",back:"Повернути сюди",unsupported:"Міні-вікно працює лише в Chrome, Edge або Opera (версія 116+)."},
+  ru:{btn:"Открыть в окне",mini:"Свернуть",expand:"Развернуть",active:"Карта открыта в мини-окне",back:"Вернуть сюда",unsupported:"Мини-окно работает только в Chrome, Edge или Opera (версия 116+)."}
+};
 const SUPPORT={en:"Support",de:"Unterstützen",es:"Apóyame",ko:"후원하기",zh:"支持我",vi:"Ủng hộ",ua:"Підтримати",ru:"Поддержать"};
 const FEEDBACK_EMAIL="bogdanftomovic@gmail.com";
 const GMAIL_URL="https://mail.google.com/mail/?view=cm&fs=1&to="+FEEDBACK_EMAIL+"&su="+encodeURIComponent("PUBG Mortar Calc — feedback");
@@ -434,7 +648,7 @@ const REPORTS={
 };
 const LANG_NAMES={en:"English",de:"German",es:"Spanish",ko:"Korean",zh:"Chinese",vi:"Vietnamese",ua:"Ukrainian",ru:"Russian"};
 function buildLangBar(){
-  const bar=document.getElementById('langBar');
+  const bar=byId('langBar');
   ['en','de','es','ko','zh','vi','ua','ru'].forEach(l=>{
     const d=document.createElement('div');
     d.className='flag'; d.dataset.lang=l; d.dataset.name=LANG_NAMES[l]||l.toUpperCase();
@@ -447,20 +661,27 @@ function setLang(l){
   if(!I18N[l]) l='en';
   LANG=l; const t=I18N[l]; UNIT=t.unit;
   document.documentElement.lang=l;
-  document.getElementById('t-sub').textContent=t.sub;
-  document.getElementById('t-maps').textContent=t.maps_label;
-  document.getElementById('t-settings').textContent=t.settings;
-  document.getElementById('t-grid').textContent=t.grid;
-  document.getElementById('t-clear').textContent=t.clear;
-  document.getElementById('t-reset').textContent=t.reset;
-  document.getElementById('t-distance').textContent=t.distance;
-  document.getElementById('t-unit').textContent=t.unit;
-  document.getElementById('t-hint').textContent=t.hint;
-  document.getElementById('t-loading').textContent=t.loading;
-  document.getElementById('t-loadingSub').textContent=t.loadingSub;
+  byId('t-sub').textContent=t.sub;
+  byId('t-maps').textContent=t.maps_label;
+  byId('t-settings').textContent=t.settings;
+  byId('t-grid').textContent=t.grid;
+  byId('t-clear').textContent=t.clear;
+  byId('t-reset').textContent=t.reset;
+  byId('t-distance').textContent=t.distance;
+  byId('t-unit').textContent=t.unit;
+  byId('t-hint').textContent=t.hint;
+  byId('t-loading').textContent=t.loading;
+  byId('t-loadingSub').textContent=t.loadingSub;
+  const pt=PIP_TEXT[l]||PIP_TEXT.en;
+  byId('t-pip').textContent=pt.btn;
+  byId('t-pipActive').textContent=pt.active;
+  byId('t-pipBack').textContent=pt.back;
+  byId('pipMini').title=pt.mini;
+  byId('pipExpand').title=pt.expand;
+  byId('t-pipExpand').textContent=pt.expand;
   const rp=REPORTS[l]||REPORTS.en;
-  document.getElementById('t-report').innerHTML=rp.pre+'<a href="'+GMAIL_URL+'" target="_blank" rel="noopener">'+rp.link+'</a>'+rp.post;
-  document.getElementById('t-support').innerHTML=HEART_SVG+'<span>'+(SUPPORT[l]||SUPPORT.en)+'</span>';
+  byId('t-report').innerHTML=rp.pre+'<a href="'+GMAIL_URL+'" target="_blank" rel="noopener">'+rp.link+'</a>'+rp.post;
+  byId('t-support').innerHTML=HEART_SVG+'<span>'+(SUPPORT[l]||SUPPORT.en)+'</span>';
   document.querySelectorAll('.flag').forEach(f=>f.classList.toggle('active', f.dataset.lang===l));
   buildMapList(); draw();
   try{ localStorage.setItem('mc_lang', l); }catch(e){}

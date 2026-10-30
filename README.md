@@ -10,6 +10,8 @@
 - Две точки ЛКМ → дистанция в метрах
 - Сетка 100 м с включением/выключением (жирные линии = 1 км)
 - Подписи километров (вкл/выкл)
+- Кнопка «Открыть в окне» — мини-окно поверх всех окон (и поверх игры в режиме «Полноэкранный (в окне)»),
+  с выбором карты внутри. Работает в Chrome / Edge / Opera 116+ (Document Picture-in-Picture API)
 
 ## Как добавить карты
 Положи HD-картинки карт (квадратные, например 4096×4096 PNG) в папку maps/:
@@ -18,6 +20,11 @@ maps/rondo.png, maps/vikendi.png, maps/sanhok.png, maps/paramo.png,
 maps/karakin.png, maps/haven.png
 
 Официальные карты: https://pubg.com/ru/game-info/maps/erangel
+
+### Тайловые карты (Erangel, Miramar, Vikendi, Sanhok)
+Нарезаны из официальных 8192×8192 карт PUBG (github.com/pubg/api-assets, Assets/Maps/*_Main_High_Res.png)
+на квадраты 1×1 км: maps/<id>/preview.jpg (2048 px, весь остров) + maps/<id>/<ряд>_<колонка>.jpg.
+При зуме подгружаются только видимые квадраты. В массиве MAPS такие карты помечены tiles:true.
 
 Размеры карт уже заданы в index.html (массив MAPS, поле size в метрах).
 Чтобы добавить/убрать карту — просто отредактируй этот массив.
