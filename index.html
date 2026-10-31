@@ -138,6 +138,51 @@
   #pipDist:empty{display:none}
 
 
+  /* ---------- HELP ---------- */
+  #helpBtn{margin-left:auto;width:28px;height:28px;flex:0 0 28px;padding:0;border-radius:50%;cursor:pointer;
+    display:flex;align-items:center;justify-content:center;background:#2a2417;border:1.5px solid var(--accent);color:var(--accent2);transition:.15s}
+  #helpBtn svg{width:18px;height:18px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+  #helpBtn:hover{background:var(--accent);color:#1a1405}
+  /* мигает, пока человек ни разу не открыл помощь */
+  #helpBtn.pulse{animation:helpPulse 1.6s ease-out infinite}
+  @keyframes helpPulse{
+    0%{box-shadow:0 0 0 0 rgba(240,160,32,.75);background:#3a2c10}
+    50%{background:#5a4012}
+    70%{box-shadow:0 0 0 9px rgba(240,160,32,0);background:#3a2c10}
+    100%{box-shadow:0 0 0 0 rgba(240,160,32,0);background:#3a2c10}
+  }
+
+  #helpModal{display:none;position:fixed;inset:0;z-index:50;background:rgba(5,7,10,.72);backdrop-filter:blur(3px);
+    align-items:center;justify-content:center;padding:24px}
+  #helpModal.open{display:flex}
+  .help-panel{width:min(560px,100%);max-height:100%;overflow:auto;background:var(--panel);border:1px solid var(--line);
+    border-radius:14px;box-shadow:0 20px 60px rgba(0,0,0,.6);padding:18px 20px 20px}
+  .help-head{display:flex;align-items:center;gap:10px;margin-bottom:14px}
+  .help-head h2{font-size:17px;font-weight:600;flex:1}
+  .help-back,.help-close{display:flex;align-items:center;gap:4px;background:var(--panel2);border:1px solid var(--line);border-radius:8px;
+    color:var(--text);cursor:pointer;font-size:13px;padding:6px 10px;transition:.15s}
+  .help-close{padding:6px}
+  .help-back:hover,.help-close:hover{border-color:var(--accent);color:var(--accent2)}
+  .help-back{display:none}
+  #helpModal.topic .help-back{display:flex}
+  .help-list{display:flex;flex-direction:column;gap:8px}
+  #helpModal.topic .help-list{display:none}
+  .help-item{display:flex;align-items:center;gap:14px;width:100%;text-align:left;background:var(--panel2);border:1px solid var(--line);
+    border-radius:10px;padding:14px 16px;color:var(--text);cursor:pointer;transition:.15s}
+  .help-item:hover{border-color:var(--accent);background:#222b36}
+  .help-ico{width:40px;height:40px;flex:0 0 40px;border-radius:10px;background:#2a2417;color:var(--accent);display:flex;align-items:center;justify-content:center}
+  .help-ico svg.ic{width:22px;height:22px;flex-basis:22px}
+  .help-txt{flex:1;display:flex;flex-direction:column;gap:3px}
+  .help-txt b{font-size:15px;font-weight:600}
+  .help-txt small{font-size:12px;color:var(--muted)}
+  .help-chev{color:var(--muted)}
+  #helpModal.topic .help-panel{width:min(980px,100%)}
+  .help-topic{display:none}
+  #helpModal.topic .help-topic{display:block}
+  .help-topic video{display:block;width:100%;border-radius:10px;background:#000;border:1px solid var(--line)}
+  .help-topic ol{margin:14px 0 0 20px;display:flex;flex-direction:column;gap:6px;font-size:14px;line-height:1.45}
+  .help-topic ol b{color:var(--accent2);font-weight:600}
+
   #langBar{display:grid;grid-template-columns:repeat(4,1fr);gap:10px 6px;margin-top:auto;margin-bottom:60px;padding-top:14px}
   .flag{position:relative;display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer;opacity:.5;transition:.15s}
   .flag:hover{opacity:1}
@@ -163,6 +208,7 @@
     <h1>
       <svg class="ic" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="4"/><line x1="12" y1="1" x2="12" y2="5"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="1" y1="12" x2="5" y2="12"/><line x1="19" y1="12" x2="23" y2="12"/></svg>
       MORTAR CALC
+      <button id="helpBtn" class="pulse"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="7.2" r="1.4" fill="currentColor" stroke="none"/><path d="M10 10.5h2.4v6.5M10 17h4.6"/></svg></button>
     </h1>
     <div class="sub" id="t-sub">PUBG distance & grid tool</div>
 
@@ -221,6 +267,30 @@
     <svg class="ic" viewBox="0 0 24 24"><rect x="2" y="4" width="20" height="16" rx="2"/><rect x="12" y="11" width="8" height="7" rx="1"/></svg>
     <div id="t-pipActive">The map is open in a mini window</div>
     <button class="btn" id="pipBack"><span id="t-pipBack">Bring back here</span></button>
+  </div>
+</div>
+
+<!-- окно помощи: список проблем → видео-инструкция -->
+<div id="helpModal">
+  <div class="help-panel" role="dialog" aria-modal="true" aria-labelledby="helpTitle">
+    <div class="help-head">
+      <button class="help-back" id="helpBack"><svg class="ic" viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg><span id="t-helpBack">Back</span></button>
+      <h2 id="helpTitle">What do you need help with?</h2>
+      <button class="help-close" id="helpClose"><svg class="ic" viewBox="0 0 24 24"><line x1="6" y1="6" x2="18" y2="18"/><line x1="18" y1="6" x2="6" y2="18"/></svg></button>
+    </div>
+    <div class="help-list" id="helpList">
+      <button class="help-item" data-topic="bg">
+        <span class="help-ico"><svg class="ic" viewBox="0 0 24 24"><rect x="2" y="4" width="20" height="16" rx="2"/><rect x="12" y="11" width="8" height="7" rx="1"/></svg></span>
+        <span class="help-txt"><b id="t-helpItemBg">Background mode & Game</b><small id="t-helpItemBgSub">How to keep the map on top of PUBG</small></span>
+        <svg class="ic help-chev" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
+      </button>
+    </div>
+    <div class="help-topic" id="helpTopicBg">
+      <video id="helpVideo" controls muted playsinline preload="none" poster="help/background-mode.jpg">
+        <source src="help/background-mode.mp4" type="video/mp4">
+      </video>
+      <ol id="helpSteps"></ol>
+    </div>
   </div>
 </div>
 
@@ -561,6 +631,29 @@ function closePip(){
 }
 byId('pipBtn').onclick=openPip;
 byId('pipBack').onclick=()=>{ if(pipWin) pipWin.close(); };
+
+/* ==================== ПОМОЩЬ (кнопка «i») ==================== */
+const helpModal = document.getElementById('helpModal');
+const helpVideo = document.getElementById('helpVideo');
+function openHelp(){
+  helpModal.className = 'open';
+  document.getElementById('helpTitle').textContent = (HELP_TEXT[LANG]||HELP_TEXT.en).title;
+  document.getElementById('helpBtn').classList.remove('pulse');
+  lsSet('mc_help_seen', '1');
+}
+function openHelpTopic(){
+  helpModal.className = 'open topic';
+  document.getElementById('helpTitle').textContent = (HELP_TEXT[LANG]||HELP_TEXT.en).item;
+  helpVideo.play().catch(()=>{});
+}
+function closeHelp(){ helpModal.className = ''; helpVideo.pause(); }
+document.getElementById('helpBtn').onclick = openHelp;
+document.querySelector('.help-item[data-topic="bg"]').onclick = openHelpTopic;
+document.getElementById('helpBack').onclick = ()=>{ helpVideo.pause(); openHelp(); };
+document.getElementById('helpClose').onclick = closeHelp;
+helpModal.addEventListener('mousedown', e=>{ if(e.target===helpModal) closeHelp(); });   // клик по затемнению
+window.addEventListener('keydown', e=>{ if(e.key==='Escape' && helpModal.classList.contains('open')) closeHelp(); });
+if(lsGet('mc_help_seen')==='1') document.getElementById('helpBtn').classList.remove('pulse');
 byId('gridToggle').onchange=draw;
 byId('clearBtn').onclick=clearPoints;
 byId('resetBtn').onclick=fitView;
@@ -633,6 +726,25 @@ const PIP_TEXT={
   ua:{btn:"Відкрити у вікні",mini:"Згорнути",expand:"Розгорнути",active:"Карта відкрита в міні-вікні",back:"Повернути сюди",unsupported:"Міні-вікно працює лише в Chrome, Edge або Opera (версія 116+)."},
   ru:{btn:"Открыть в окне",mini:"Свернуть",expand:"Развернуть",active:"Карта открыта в мини-окне",back:"Вернуть сюда",unsupported:"Мини-окно работает только в Chrome, Edge или Opera (версия 116+)."}
 };
+// тексты окна помощи; в steps — свой HTML (только <b>)
+const HELP_TEXT={
+  en:{btn:"Help",close:"Close",title:"What do you need help with?",item:"Background mode & Game",itemSub:"How to keep the map on top of PUBG",back:"Back",
+      steps:["Click <b>“Open in window”</b> — the map opens in a mini window.","In PUBG: <b>Settings → Graphics → Display Mode → “Borderless”</b>.","The mini window stays on top of the game — move the mouse over it and measure."]},
+  de:{btn:"Hilfe",close:"Schließen",title:"Wobei brauchst du Hilfe?",item:"Hintergrundmodus & Spiel",itemSub:"So bleibt die Karte über PUBG",back:"Zurück",
+      steps:["Klicke auf <b>„Im Fenster öffnen“</b> – die Karte öffnet sich im Mini-Fenster.","In PUBG: <b>Einstellungen → Grafik → Anzeigemodus → „Randlos“</b>.","Das Mini-Fenster bleibt über dem Spiel – Maus darüber bewegen und messen."]},
+  es:{btn:"Ayuda",close:"Cerrar",title:"¿Con qué necesitas ayuda?",item:"Modo en segundo plano y juego",itemSub:"Cómo mantener el mapa sobre PUBG",back:"Atrás",
+      steps:["Pulsa <b>«Abrir en ventana»</b>: el mapa se abre en una mini ventana.","En PUBG: <b>Ajustes → Gráficos → Modo de pantalla → «Sin bordes»</b>.","La mini ventana queda sobre el juego: mueve el ratón encima y mide."]},
+  ko:{btn:"도움말",close:"닫기",title:"어떤 도움이 필요하신가요?",item:"백그라운드 모드 & 게임",itemSub:"PUBG 위에 지도를 띄우는 방법",back:"뒤로",
+      steps:["<b>‘창으로 열기’</b>를 누르면 지도가 미니 창으로 열립니다.","PUBG: <b>설정 → 그래픽 → 화면 모드 → ‘테두리 없음’</b>.","미니 창이 게임 위에 유지됩니다. 마우스를 올려 거리를 재세요."]},
+  zh:{btn:"帮助",close:"关闭",title:"需要什么帮助？",item:"后台模式与游戏",itemSub:"如何让地图显示在 PUBG 上方",back:"返回",
+      steps:["点击<b>“在小窗口中打开”</b>，地图会在小窗口中打开。","在 PUBG 中：<b>设置 → 图形 → 显示模式 → “无边框”</b>。","小窗口会一直显示在游戏上方，把鼠标移过去即可测量。"]},
+  vi:{btn:"Trợ giúp",close:"Đóng",title:"Bạn cần trợ giúp gì?",item:"Chế độ nền & Trò chơi",itemSub:"Cách giữ bản đồ trên PUBG",back:"Quay lại",
+      steps:["Nhấn <b>“Mở trong cửa sổ”</b> — bản đồ mở trong cửa sổ nhỏ.","Trong PUBG: <b>Cài đặt → Đồ họa → Chế độ hiển thị → “Không viền”</b>.","Cửa sổ nhỏ nằm trên trò chơi — di chuột vào và đo khoảng cách."]},
+  ua:{btn:"Допомога",close:"Закрити",title:"З чим потрібна допомога?",item:"Фоновий режим і Гра",itemSub:"Як тримати карту поверх PUBG",back:"Назад",
+      steps:["Натисніть <b>«Відкрити у вікні»</b> — карта відкриється в міні-вікні.","У PUBG: <b>Налаштування → Графіка → Режим відображення → «Без рамок»</b>.","Міні-вікно залишиться поверх гри — наведіть мишку й міряйте дистанцію."]},
+  ru:{btn:"Помощь",close:"Закрыть",title:"С чем нужна помощь?",item:"Фоновый режим и Игра",itemSub:"Как держать карту поверх PUBG",back:"Назад",
+      steps:["Нажмите <b>«Открыть в окне»</b> — карта откроется в мини-окне.","В PUBG: <b>Настройки → Графика → Режим отображения → «Без рамок»</b>.","Мини-окно останется поверх игры — наведите мышку и меряйте дистанцию."]}
+};
 const SUPPORT={en:"Support",de:"Unterstützen",es:"Apóyame",ko:"후원하기",zh:"支持我",vi:"Ủng hộ",ua:"Підтримати",ru:"Поддержать"};
 const FEEDBACK_EMAIL="bogdanftomovic@gmail.com";
 const GMAIL_URL="https://mail.google.com/mail/?view=cm&fs=1&to="+FEEDBACK_EMAIL+"&su="+encodeURIComponent("PUBG Mortar Calc — feedback");
@@ -679,6 +791,14 @@ function setLang(l){
   byId('pipMini').title=pt.mini;
   byId('pipExpand').title=pt.expand;
   byId('t-pipExpand').textContent=pt.expand;
+  const ht=HELP_TEXT[l]||HELP_TEXT.en;
+  byId('helpBtn').title=ht.btn;
+  byId('helpClose').title=ht.close;
+  byId('t-helpBack').textContent=ht.back;
+  byId('t-helpItemBg').textContent=ht.item;
+  byId('t-helpItemBgSub').textContent=ht.itemSub;
+  byId('helpSteps').innerHTML=ht.steps.map(s=>'<li>'+s+'</li>').join('');
+  byId('helpTitle').textContent=helpModal.classList.contains('topic') ? ht.item : ht.title;
   const rp=REPORTS[l]||REPORTS.en;
   byId('t-report').innerHTML=rp.pre+'<a href="'+GMAIL_URL+'" target="_blank" rel="noopener">'+rp.link+'</a>'+rp.post;
   byId('t-support').innerHTML=HEART_SVG+'<span>'+(SUPPORT[l]||SUPPORT.en)+'</span>';
