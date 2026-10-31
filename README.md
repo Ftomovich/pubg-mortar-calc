@@ -21,10 +21,12 @@ maps/karakin.png, maps/haven.png
 
 Официальные карты: https://pubg.com/ru/game-info/maps/erangel
 
-### Тайловые карты (Erangel, Miramar, Vikendi, Sanhok)
+### Тайловые карты (Erangel, Miramar, Vikendi, Sanhok, Paramo)
 Нарезаны из официальных 8192×8192 карт PUBG (github.com/pubg/api-assets, Assets/Maps/*_Main_High_Res.png)
 на квадраты 1×1 км: maps/<id>/preview.jpg (2048 px, весь остров) + maps/<id>/<ряд>_<колонка>.jpg.
 При зуме подгружаются только видимые квадраты. В массиве MAPS такие карты помечены tiles:true.
+Paramo взят из версии api-assets от 2022-11 (коммит ec97a270fd): в обновлении 31.2 (2024) города Capaco, Atahul,
+Helipad, Makalpa с карты убрали, а в версии 2022 они застроены и подписаны — как на pubg.com.
 
 Размеры карт уже заданы в index.html (массив MAPS, поле size в метрах).
 Чтобы добавить/убрать карту — просто отредактируй этот массив.
